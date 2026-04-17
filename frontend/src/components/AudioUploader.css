@@ -1,0 +1,156 @@
+.chat-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  padding: 8px;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 56px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.chat-input-bar:focus-within, .chat-input-bar.drag-active {
+  border-color: var(--accent);
+  background: white;
+  box-shadow: 0 0 0 4px var(--accent-light), 0 10px 30px -10px rgba(37, 99, 235, 0.2);
+  transform: translateY(-1px);
+}
+
+.chat-input-bar.uploading {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────── */
+.attach-btn, .send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.attach-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.attach-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--accent);
+  border-color: var(--border);
+}
+
+.send-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: none;
+}
+
+.send-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.send-btn.active:hover {
+  transform: scale(1.08) rotate(-10deg);
+  background: var(--accent-hover);
+}
+
+/* ─── Content Area ───────────────────────────────────────────────────────────── */
+.input-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.placeholder-text {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f1f5f9;
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 14px;
+  max-width: 100%;
+}
+
+.file-chip-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.file-chip-remove {
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.file-chip-remove:hover {
+  color: var(--danger);
+}
+
+/* ─── Circular Progress ──────────────────────────────────────────────────────── */
+.circular-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-value {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.mini-upload-track {
+  height: 4px;
+  background: var(--bg-tertiary);
+  width: calc(100% - 40px);
+  margin: 0 auto;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mini-upload-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}

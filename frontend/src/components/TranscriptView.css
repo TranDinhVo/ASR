@@ -1,0 +1,87 @@
+.transcript-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transcript-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.transcript-wordcount {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.transcript-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ─── Full Text ──────────────────────────────────────────────────────────────── */
+.transcript-text {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  color: var(--text-primary);
+  line-height: 1.7;
+  font-size: 15px;
+  max-height: 480px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── Segments ───────────────────────────────────────────────────────────────── */
+.segments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.segment-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all 0.15s ease;
+}
+
+.segment-item:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-secondary);
+}
+
+.segment-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-weight: 700;
+  min-width: 50px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.segment-text {
+  flex: 1;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+}

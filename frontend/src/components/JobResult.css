@@ -1,0 +1,77 @@
+.ai-response-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.ai-response-content.has-error {
+  color: #991b1b;
+}
+
+/* ─── Compact Results ────────────────────────────────────────────────────────── */
+.chat-result-tabs {
+  margin-top: 8px;
+}
+
+.compact-result-view {
+  background: white;
+  border-radius: var(--radius-md);
+  padding: 16px;
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* ─── Keywords ───────────────────────────────────────────────────────────────── */
+.keywords-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keyword-chip {
+  padding: 4px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ─── Progress ───────────────────────────────────────────────────────────────── */
+.job-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.job-progress-step {
+  color: var(--accent);
+}
+
+/* ─── Error State (AI Friendly) ──────────────────────────────────────────────── */
+.job-error-friendly {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-title {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--danger);
+}
+
+.error-msg {
+  font-size: 13px;
+  opacity: 0.8;
+  line-height: 1.5;
+}
