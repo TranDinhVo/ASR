@@ -34,6 +34,7 @@ export const authAPI = {
   verifyEmail: (token) => api.get(`/auth/verify/${token}`),
   resendVerification: (email) => api.post('/auth/resend-verification', { email }),
   getMe: () => api.get('/auth/me'),
+  updateMe: (data) => api.patch('/auth/me', data),
 };
 
 // ─── Jobs ──────────────────────────────────────────────────────────────────────
@@ -57,6 +58,11 @@ export const jobsAPI = {
   deleteJob: (id) => api.delete(`/jobs/${id}`),
 
   updateJob: (id, data) => api.patch(`/jobs/${id}`, data),
+};
+
+// ─── Brain Chat ───────────────────────────────────────────────────────────────
+export const chatAPI = {
+  sendMessage: (message) => api.post('/chat', { message }),
 };
 
 export default api;

@@ -11,95 +11,137 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 
 /**
- * Transcribe and summarize audio file using Gemini 1.5 Flash
- * @param {string} filePath - Path to local audio file
- * @param {string} language - Language ('vi', 'en', etc.)
+ * Process content following the 3-model pipeline: 
+ * Stage 1 (Raw) -> Stage 2 (Clean/Correct) -> Stage 3 (Summarize/Extract)
+ * @param {string} filePath - Path to local file
  * @param {string} mimeType - Mime type of the file
- * @returns {Object} - { transcript, summary, keyPoints, keywords }
+ * @param {string} textContent - Optional extracted text for documents
+ * @returns {Object} - Results containing stage1_raw, stage2_clean, stage3_summary, keyPoints, keywords
  */
-async function transcribeAndSummarize(filePath, language = 'vi', mimeType = 'audio/mpeg') {
+async function processPipeline(filePath, mimeType, textContent = null) {
   try {
-    // 1. Upload file to Gemini File API
-    console.log(`Uploading ${filePath} to Gemini File API...`);
-    const uploadResult = await fileManager.uploadFile(filePath, {
-      mimeType: mimeType, 
-      displayName: path.basename(filePath),
+    const isMedia = mimeType.startsWith('audio/') || mimeType.startsWith('video/');
+    let fileUri = null;
+
+    if (isMedia) {
+      console.log(`Uploading ${filePath} to Gemini File API...`);
+      const uploadResult = await fileManager.uploadFile(filePath, {
+        mimeType: mimeType, 
+        displayName: path.basename(filePath),
+      });
+
+      const file = uploadResult.file;
+      let fileStatus = await fileManager.getFile(file.name);
+      while (fileStatus.state === "PROCESSING") {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        fileStatus = await fileManager.getFile(file.name);
+      }
+
+      if (fileStatus.state === "FAILED") {
+        throw new Error("File processing failed on Gemini side.");
+      }
+      fileUri = file.uri;
+    }
+
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-flash-latest",
+      generationConfig: { responseMimeType: "application/json" } 
     });
 
-    const file = uploadResult.file;
-    console.log(`Uploaded file: ${file.displayName} (URI: ${file.uri})`);
-
-    // 2. Poll for file processing (audio files might take a moment to be "ACTIVE")
-    // Note: For small files, it's usually active immediately, but let's be safe.
-    let fileStatus = await fileManager.getFile(file.name);
-    while (fileStatus.state === "PROCESSING") {
-      process.stdout.write(".");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      fileStatus = await fileManager.getFile(file.name);
-    }
-
-    if (fileStatus.state === "FAILED") {
-      throw new Error("Audio file processing failed on Gemini side.");
-    }
-
-    // 3. Generate content
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-flash-latest" },
-      { apiVersion: "v1beta" }
-    );
-
     const prompt = `
-      Bạn là một trợ lý AI chuyên nghiệp về xử lý âm thanh. 
-      Nhiệm vụ của bạn là xử lý file âm thanh đính kèm và trả về kết quả dưới định dạng JSON chính xác như sau:
+      Bạn là một AI chuyên gia về giáo dục và quản lý tri thức cho sinh viên.
+      Hãy thực hiện quy trình xử lý dữ liệu qua 3 giai đoạn (3-Model Pipeline) sau đây:
+
+      GIAI ĐOẠN 1: RECOGNITION (Whisper equivalent)
+      - Nếu là audio/video: Chuyển toàn bộ lời nói thành văn bản thô, trung thực nhất có thể.
+      - nếu là tài liệu: Giữ nguyên văn bản đã trích xuất.
+
+      GIAI ĐOẠN 2: ERROR CORRECTION (ViT5-Correct equivalent)
+      - Hiệu đính văn bản thô ở Giai đoạn 1. Sửa lỗi chính tả, ngữ pháp, chuẩn hóa các thuật ngữ chuyên môn tiếng Việt.
+      - Chuyển đổi các câu nói ngắt quãng từ audio thành câu văn hoàn chỉnh, dễ đọc.
+
+      GIAI ĐOẠN 3: KNOWLEDGE EXTRACTION (ViT5-Summarize equivalent)
+      - Tóm tắt nội dung đã hiệu đính ở Giai đoạn 2 thành một bản tóm tắt súc tích, logic.
+      - Trích xuất các Ý chính (Key Points) quan trọng nhất cho việc học tập.
+      - Trích xuất các Từ khóa (Keywords) chuyên môn.
+
+      Yêu cầu đầu ra trả về JSON theo cấu trúc sau:
       {
-        "transcript": "toàn bộ văn bản chuyển từ âm thanh",
-        "summary": "một đoạn văn ngắn tóm tắt nội dung chính",
-        "keyPoints": ["ý chính 1", "ý chính 2", "abc..."],
-        "keywords": ["từ khoá 1", "từ khoá 2", "..."],
-        "segments": [
-          { "start": 0, "end": 10, "text": "nội dung đoạn đầu" },
-          ...
-        ]
+        "stage1_raw": "văn bản thô từ Giai đoạn 1",
+        "stage2_clean": "văn bản đã hiệu đính từ Giai đoạn 2",
+        "stage3_summary": "bản tóm tắt từ Giai đoạn 3",
+        "keyPoints": ["ý 1", "ý 2", "..."],
+        "keywords": ["từ 1", "từ 2", "..."]
       }
-      
-      Yêu cầu:
-      - Tự động nhận diện ngôn ngữ được nói trong audio và sử dụng CHÍNH ngôn ngữ đó để viết transcript, summary và keyPoints.
-      - Nếu là đoạn hội thoại, hãy cố gắng phân biệt các câu.
-      - Phần 'segments' hãy chia nhỏ theo thời gian (giây) nếu có thể.
-      - CHỈ trả về JSON, không kèm giải thích gì thêm.
     `;
 
-    const result = await model.generateContent([
-      {
-        fileData: {
-          mimeType: file.mimeType,
-          fileUri: file.uri,
-        },
-      },
-      { text: prompt },
-    ]);
-
-    const responseText = result.response.text();
-    console.log("Gemini Response received");
-
-    // Extract JSON from response (handling potential markdown blocks)
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Could not parse JSON from Gemini response");
+    const parts = [];
+    if (isMedia) {
+      parts.push({
+        fileData: { mimeType, fileUri }
+      });
     }
+    
+    const textToInclude = textContent ? `NỘI DUNG TÀI LIỆU:\n${textContent}\n\n` : "";
+    parts.push({ text: textToInclude + prompt });
 
-    const data = JSON.parse(jsonMatch[0]);
+    console.log(`🚀 [Gemini] Generating content for Job...`);
+    let result;
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        result = await model.generateContent(parts);
+        break;
+      } catch (err) {
+        if (err.status === 503 || (err.message && err.message.includes('503'))) {
+          retries--;
+          if (retries === 0) throw err;
+          console.log(`⚠️ [Gemini] 503 Service Unavailable, retrying in 5s... (${retries} retries left)`);
+          await new Promise(res => setTimeout(res, 5000));
+        } else {
+          throw err;
+        }
+      }
+    }
+    const responseText = result.response.text();
+    
+    console.log(`📩 [Gemini] Raw Response length: ${responseText.length}`);
 
-    // 4. Cleanup (optional: Gemini File API files expire after 2 days anyway)
-    // await fileManager.deleteFile(file.name);
-
-    return data;
+    try {
+      return JSON.parse(responseText.trim());
+    } catch (parseError) {
+      console.error("Failed to parse Gemini JSON. Response was:", responseText);
+      // Fallback to regex if needed
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return JSON.parse(jsonMatch[0]);
+      throw new Error("Gemini returned invalid JSON structure");
+    }
   } catch (error) {
-    console.error("Gemini Service Error:", error);
+    console.error("Gemini Pipeline Error:", error.message);
+    if (error.response) {
+      console.error("Gemini Error Details:", JSON.stringify(error.response.data));
+    }
     throw error;
   }
 }
 
+/**
+ * Generate embeddings for RAG
+ * @param {string} text 
+ * @returns {Promise<number[]>}
+ */
+async function generateEmbedding(text) {
+  try {
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const result = await model.embedContent(text);
+    return result.embedding.values;
+  } catch (error) {
+    console.error("Embedding Error:", error);
+    return [];
+  }
+}
+
 module.exports = {
-  transcribeAndSummarize,
+  processPipeline,
+  generateEmbedding,
 };

@@ -28,6 +28,11 @@ const jobSchema = new mongoose.Schema(
       type: String,
       default: 'Untitled',
     },
+    fileType: {
+      type: String,
+      enum: ['audio', 'video', 'document', 'text'],
+      default: 'audio',
+    },
     originalFilename: {
       type: String,
       required: true,
@@ -36,11 +41,19 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    cloudUrl: {
+      type: String,
+      default: null,           // Cloudinary secure_url
+    },
+    cloudPublicId: {
+      type: String,
+      default: null,           // Cloudinary public_id (for deletion)
+    },
     fileSize: {
       type: Number,           // bytes
     },
     duration: {
-      type: Number,           // seconds
+      type: Number,           // seconds (for audio/video)
     },
     mimeType: {
       type: String,
@@ -66,18 +79,31 @@ const jobSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ─── Kết quả Transcript ──────────────────────────────────────────────────
+    // ─── Kết quả 3-Model Pipeline ───────────────────────────────────────────
+    pipeline: {
+      stage1_raw: { type: String, default: null },      // Whisper equivalent
+      stage2_clean: { type: String, default: null },    // ViT5-Correct equivalent
+      stage3_summary: { type: String, default: null },  // ViT5-Summarize equivalent
+    },
+
+    // ─── Kết quả Transcript (Compatibility) ──────────────────────────────────
     transcript: {
-      content: { type: String, default: null },       // full text
+      content: { type: String, default: null },       // full text (usually same as cleanText)
       segments: { type: [segmentSchema], default: [] }, // timestamps
       wordCount: { type: Number, default: 0 },
     },
 
-    // ─── Kết quả Summary ─────────────────────────────────────────────────────
+    // ─── Kết quả Summary (Compatibility) ─────────────────────────────────────
     summary: {
       content: { type: String, default: null },        // paragraph tóm tắt
       keyPoints: { type: [String], default: [] },      // danh sách ý chính
       keywords: { type: [String], default: [] },       // từ khóa nổi bật
+    },
+
+    // ─── Vector Data (RAG) ──────────────────────────────────────────────────
+    embeddings: {
+      type: [Number],  // For full document embedding
+      default: [],
     },
 
     // ─── Metadata ────────────────────────────────────────────────────────────

@@ -22,6 +22,10 @@ const useAppStore = create((set, get) => ({
 
   isAuthenticated: () => !!get().token,
 
+  // ─── Chat ────────────────────────────────────────────────────────────────────
+  triggerNewChat: 0,
+  startNewChat: () => set(state => ({ triggerNewChat: state.triggerNewChat + 1 })),
+
   // ─── Current Job (đang xử lý) ───────────────────────────────────────────────
   // Khởi tạo từ localStorage (guest reload vẫn giữ được job)
   currentJob: null,
@@ -74,7 +78,20 @@ const useAppStore = create((set, get) => ({
     set((state) => ({
       jobs: state.jobs.filter((j) => j._id !== id),
       totalJobs: Math.max(0, state.totalJobs - 1),
+      recentJobs: state.recentJobs.filter(j => j._id !== id)
     })),
+
+  fetchRecentJobs: async () => {
+    const { token } = get();
+    if (!token) return;
+    try {
+      const { jobsAPI } = await import('../services/api');
+      const res = await jobsAPI.getJobs({ limit: 10 });
+      set({ recentJobs: res.data.jobs || [] });
+    } catch (err) {
+      console.error('Failed to fetch recent jobs:', err);
+    }
+  }
 
 }));
 

@@ -198,3 +198,47 @@ exports.getMe = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// ─── UPDATE ME ────────────────────────────────────────────────────────────────
+exports.updateMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('+password');
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
+
+    const { name, currentPassword, newPassword } = req.body;
+
+    // Cập nhật tên
+    if (name && name.trim()) {
+      user.name = name.trim();
+    }
+
+    // Đổi mật khẩu
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Vui lòng nhập mật khẩu hiện tại' });
+      }
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Mật khẩu hiện tại không đúng' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+      }
+      user.password = newPassword;
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Cập nhật thành công',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        totalJobs: user.totalJobs,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

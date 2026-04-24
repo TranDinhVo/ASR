@@ -7,6 +7,7 @@ const fs = require('fs');
 
 const authRoutes = require('./routes/auth');
 const jobRoutes = require('./routes/jobs');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(uploadDir));
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

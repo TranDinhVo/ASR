@@ -1,77 +1,197 @@
-.ai-response-content {
+/* ─── Loading state ─────────────────────────────────────────────────────────── */
+.job-result-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #5f6368;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.cancel-link {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+/* ─── File pill (user message) ───────────────────────────────────────────────── */
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+/* ─── 3-Model Pipeline Progress ──────────────────────────────────────────────── */
+.pipeline-progress {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+
+.pipeline-stage-label {
+  font-size: 14px;
+  color: #1a73e8;
+  font-weight: 500;
+  margin: 0;
+}
+
+.pipeline-bar-track {
+  height: 3px;
+  background: #e8eaed;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pipeline-bar-fill {
+  height: 100%;
+  background: #1a73e8;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.pipeline-steps {
+  display: flex;
   gap: 16px;
-  width: 100%;
+  font-size: 12px;
+  color: #9aa0a6;
 }
 
-.ai-response-content.has-error {
-  color: #991b1b;
+.pipeline-steps span.done {
+  color: #1e8e3e;
+  font-weight: 600;
 }
 
-/* ─── Compact Results ────────────────────────────────────────────────────────── */
-.chat-result-tabs {
-  margin-top: 8px;
+/* ─── Error ──────────────────────────────────────────────────────────────────── */
+.pipeline-error {
+  color: #d93025;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-.compact-result-view {
+.pipeline-error p {
+  margin: 4px 0 0;
+  opacity: 0.8;
+  font-size: 13px;
+}
+
+/* ─── Result card ────────────────────────────────────────────────────────────── */
+.pipeline-result {
+  border: 1px solid #e8eaed;
+  border-radius: 16px;
+  overflow: hidden;
   background: white;
-  border-radius: var(--radius-md);
-  padding: 16px;
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
-  max-height: 400px;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────────── */
+.result-tabs {
+  display: flex;
+  background: #f8f9fa;
+  padding: 6px 6px 0;
+  gap: 2px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.result-tabs button {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5f6368;
+  cursor: pointer;
+  border-radius: 10px 10px 0 0;
+  transition: all 0.2s;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+}
+
+.result-tabs button:hover {
+  background: #ececec;
+}
+
+.result-tabs button.active {
+  background: white;
+  color: #1a73e8;
+  border-bottom: 2px solid #1a73e8;
+}
+
+/* ─── Content area ───────────────────────────────────────────────────────────── */
+.result-body {
+  padding: 20px;
+  max-height: 480px;
   overflow-y: auto;
 }
 
-/* ─── Keywords ───────────────────────────────────────────────────────────────── */
-.keywords-grid {
+.result-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1f1f1f;
+  white-space: pre-wrap;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+}
+
+.key-points-list {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.key-points-list li {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #1f1f1f;
+}
+
+.keywords-wrap {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.keyword-chip {
-  padding: 4px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* ─── Progress ───────────────────────────────────────────────────────────────── */
-.job-progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.kw-chip {
+  background: #e8f0fe;
+  color: #1557cc;
+  padding: 6px 14px;
+  border-radius: 16px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 500;
 }
 
-.job-progress-step {
-  color: var(--accent);
-}
-
-/* ─── Error State (AI Friendly) ──────────────────────────────────────────────── */
-.job-error-friendly {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.error-title {
-  font-weight: 700;
-  display: flex;
+/* ─── Raw text toggle ────────────────────────────────────────────────────────── */
+.toggle-raw-btn {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--danger);
+  background: none;
+  border: none;
+  color: #5f6368;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  font-family: 'Google Sans', 'Inter', sans-serif;
 }
 
-.error-msg {
+.raw-text {
+  margin-top: 12px;
+  padding: 14px;
+  background: #f8f9fa;
+  border-radius: 10px;
   font-size: 13px;
-  opacity: 0.8;
-  line-height: 1.5;
+  line-height: 1.7;
+  color: #5f6368;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.job-result-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0;
 }

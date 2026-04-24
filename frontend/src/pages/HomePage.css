@@ -1,162 +1,81 @@
-.home-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 60px 0 100px;
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
+.new-chat-hero {
+  flex: 1;
 }
 
-/* ─── Hero ───────────────────────────────────────────────────────────────────── */
-.hero {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+.hero-greeting {
+  font-family: 'Google Sans', 'Inter', sans-serif;
+  line-height: 1.2;
 }
 
-.hero-badge {
-  display: inline-flex;
+/* ─── Suggestion Chips ───────────────────────────────────────────────────────── */
+.chip {
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: var(--accent-light);
+  padding: 10px 18px;
+  background: #f0f4f9;
+  border: none;
   border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.hero-title {
-  font-size: clamp(36px, 6vw, 56px);
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--text-primary);
-  max-width: 700px;
-}
-
-.hero-subtitle {
-  font-size: 18px;
-  color: var(--text-secondary);
-  max-width: 600px;
-  line-height: 1.6;
-}
-
-.hero-stats {
-  display: flex;
-  gap: 32px;
-  margin-top: 16px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   font-size: 14px;
-  color: var(--text-muted);
   font-weight: 500;
+  color: #1f1f1f;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Google Sans', 'Inter', sans-serif;
 }
 
-.stat-item svg {
-  color: var(--accent);
+.chip:hover {
+  background: #e2e8f3;
 }
 
-/* ─── Hero Mini (When chat active) ─────────────────────────────────────────── */
-.hero-mini {
-  flex-direction: row;
-  justify-content: space-between;
+.chip.active {
+  background: #e8f0fe;
+  color: #1967d2;
+}
+
+.chip-icon {
+  font-size: 16px;
+}
+
+/* ─── Chat Footer ────────────────────────────────────────────────────────────── */
+.chat-footer-input {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width, 280px);
+  right: 0;
+  padding: 16px 24px 24px;
+  background: linear-gradient(to bottom, transparent, white 35%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 100;
+}
+
+.chat-footer-input > div {
   width: 100%;
-  padding: 0;
-  gap: 20px;
+  max-width: 720px;
 }
 
-.hero-mini .hero-title {
-  font-size: 20px;
-  text-align: left;
-  max-width: none;
+.footer-disclaimer {
+  font-size: 12px;
+  color: #9aa0a6;
+  margin-top: 12px;
+  text-align: center;
+  font-family: 'Google Sans', 'Inter', sans-serif;
 }
 
-.hero-mini .hero-badge {
-  order: 2;
-  font-size: 11px;
-}
-
-/* ─── Chat Thread ───────────────────────────────────────────────────────────── */
+/* ─── Chat Thread ────────────────────────────────────────────────────────────── */
 .chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  padding-bottom: 40px;
-}
-
-/* ─── Chat Main Card Frame (Flat) ─────────────────────────────────────────── */
-.chat-main-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 40px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.5s ease;
-  margin-top: 20px;
-}
-
-/* ─── Chat Input Area ───────────────────────────────────────────────────────── */
-.chat-input-area {
-  position: sticky;
-  bottom: 0;
-  z-index: 100;
-  padding: 24px 0 10px;
-  background: var(--bg-secondary);
-  backdrop-filter: blur(8px);
-  margin-top: 20px;
-}
-
-/* ─── Guest CTA (Flat & Compact) ─────────────────────────────────────────── */
-.guest-cta {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.guest-cta-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.guest-cta-title {
-  margin: 0;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.guest-cta-sub {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.guest-cta-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 32px;
+  padding: 16px 0 220px;
+  width: 100%;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .home-page { padding: 40px 16px 80px; gap: 40px; }
-  .hero-title { font-size: 32px; }
-  .hero-stats { flex-direction: column; gap: 12px; align-items: flex-start; }
-  .hero-mini { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .hero-mini .hero-badge { order: -1; }
+@media (max-width: 768px) {
+  .chat-footer-input {
+    left: 0;
+  }
 }

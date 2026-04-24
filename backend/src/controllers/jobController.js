@@ -3,93 +3,129 @@ const path = require('path');
 const Job = require('../models/Job');
 const User = require('../models/User');
 const geminiService = require('../services/geminiService');
+const documentService = require('../services/documentService');
+const { uploadToCloud, deleteFromCloud } = require('../services/cloudinaryService');
 
 
 // ─── UPLOAD & START JOB ──────────────────────────────────────────────────────
 exports.uploadAudio = async (req, res) => {
-  console.log('[Backend] Received upload request:', {
-    filename: req.file?.originalname,
-    language: req.body.language,
-    title: req.body.title
-  });
   try {
     if (!req.file) {
-      console.warn('[Backend] No file attached to request');
-      return res.status(400).json({ message: 'Vui lòng chọn file audio' });
+      return res.status(400).json({ message: 'Vui lòng chọn file' });
     }
 
     const { language = 'vi', title } = req.body;
+    const mimeType = req.file.mimetype;
+    const localPath = req.file.path;
+    
+    // Detect file type
+    let fileType = 'audio';
+    if (mimeType.startsWith('video/')) fileType = 'video';
+    else if (mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('officedocument')) fileType = 'document';
 
-    // Tạo job trong DB
-    console.log('💾 [Backend] Creating job in DB...');
+    // Upload to Cloudinary (keep local copy until Gemini processes it)
+    console.log(`☁️  [Upload] Uploading to Cloudinary...`);
+    let cloudUrl = null;
+    let cloudPublicId = null;
+    try {
+      // Upload to cloud - but DON'T delete local yet (Gemini needs it)
+      const { v2: cloudinary } = require('cloudinary');
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key:    process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+      let resource_type = 'raw';
+      if (mimeType.startsWith('audio/') || mimeType.startsWith('video/')) resource_type = 'video';
+      const result = await cloudinary.uploader.upload(localPath, {
+        resource_type,
+        folder: 'student-ai',
+        use_filename: true,
+        unique_filename: true,
+      });
+      cloudUrl = result.secure_url;
+      cloudPublicId = result.public_id;
+      console.log(`✅ [Cloudinary] Uploaded: ${cloudUrl}`);
+    } catch (cloudErr) {
+      console.warn(`⚠️  [Cloudinary] Upload failed, using local:`, cloudErr.message);
+    }
+
+    // Create job with cloud info
     const job = await Job.create({
       userId: req.userId,
       title: title || req.file.originalname.replace(/\.[^/.]+$/, ''),
+      fileType,
       originalFilename: req.file.originalname,
-      filePath: req.file.path,
+      filePath: localPath,
+      cloudUrl,
+      cloudPublicId,
       fileSize: req.file.size,
-      mimeType: req.file.mimetype,
+      mimeType,
       language,
       status: 'pending',
     });
 
-    // Trả về ngay, xử lý bất đồng bộ ở background
-    console.log('[Backend] Job created successfully, starting background processing:', job._id);
     res.status(202).json({
       message: 'File đã được tải lên, đang xử lý...',
       jobId: job._id,
       status: 'pending',
     });
 
-    // ─── Background processing ───────────────────────────────────────────────
-    processJob(job._id, req.file.path, language);
+    // Background processing (local file still exists at this point)
+    processJob(job._id, localPath, mimeType, fileType);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
 // ─── Background: gọi model và cập nhật DB ────────────────────────────────────
-async function processJob(jobId, filePath, language) {
+async function processJob(jobId, filePath, mimeType, fileType) {
   try {
-    console.log(`🧵 [Background] Starting job ${jobId}...`);
-    // Lấy thông tin mimeType từ job
-    const job = await Job.findById(jobId);
-    const mimeType = job?.mimeType || 'audio/mpeg';
-
-    // Cập nhật status → processing
+    console.log(`🧵 [Background] Starting job ${jobId} (${fileType})...`);
     await Job.findByIdAndUpdate(jobId, { status: 'processing', progress: 10 });
-    console.log(`⏳ [Background] Job ${jobId}: Processing (10%)`);
 
-    // Gọi Gemini service
-    console.log(`🤖 [Background] Job ${jobId}: Calling Gemini service...`);
-    const result = await geminiService.transcribeAndSummarize(filePath, language, mimeType);
+    let textContent = null;
+    if (fileType === 'document') {
+      console.log(`📄 [Background] Extracting text from document...`);
+      textContent = await documentService.extractText(filePath, mimeType);
+      await Job.findByIdAndUpdate(jobId, { progress: 30 });
+    }
 
-    // Cập nhật progress
+    console.log(`🤖 [Background] Job ${jobId}: Calling Gemini Pipeline...`);
+    const result = await geminiService.processPipeline(filePath, mimeType, textContent);
     await Job.findByIdAndUpdate(jobId, { progress: 80 });
-    console.log(`⏳ [Background] Job ${jobId}: Transcription received (80%)`);
 
-    // Parse kết quả từ Gemini
-    const transcriptContent = result.transcript || '';
-    const segments = result.segments || [];
-    const summaryContent = result.summary || '';
-    const keyPoints = result.keyPoints || [];
-    const keywords = result.keywords || [];
+    // Delete local file after Gemini has processed it
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️  [Background] Local file cleaned up: ${filePath}`);
+      }
+    } catch (e) {
+      console.warn(`⚠️  [Background] Could not delete local file: ${e.message}`);
+    }
 
-    // Lưu kết quả vào DB
-    console.log(`💾 [Background] Job ${jobId}: Updating DB with results...`);
+    console.log(`🧠 [Background] Job ${jobId}: Generating embeddings...`);
+    const embedding = await geminiService.generateEmbedding(result.stage2_clean);
+
     await Job.findByIdAndUpdate(jobId, {
       status: 'done',
       progress: 100,
       completedAt: new Date(),
-      'transcript.content': transcriptContent,
-      'transcript.segments': segments,
-      'transcript.wordCount': transcriptContent.split(/\s+/).filter(Boolean).length,
-      'summary.content': summaryContent,
-      'summary.keyPoints': keyPoints,
-      'summary.keywords': keywords,
+      pipeline: {
+        stage1_raw: result.stage1_raw,
+        stage2_clean: result.stage2_clean,
+        stage3_summary: result.stage3_summary,
+      },
+      'transcript.content': result.stage2_clean,
+      'transcript.segments': result.segments || [],
+      'transcript.wordCount': result.stage2_clean.split(/\s+/).filter(Boolean).length,
+      'summary.content': result.stage3_summary,
+      'summary.keyPoints': result.keyPoints || [],
+      'summary.keywords': result.keywords || [],
+      embeddings: embedding,
     });
 
-    // Tăng số job của user (chỉ khi có tài khoản)
     const completedJob = await Job.findById(jobId);
     if (completedJob?.userId) {
       await User.findByIdAndUpdate(completedJob.userId, { $inc: { totalJobs: 1 } });
@@ -97,7 +133,9 @@ async function processJob(jobId, filePath, language) {
 
     console.log(`✅ [Background] Job ${jobId} completed successfully`);
   } catch (err) {
-    console.error(`❌ [Background] Job ${jobId} failed:`, err.message);
+    console.error(`❌ [Background] Job ${jobId} failed:`, err);
+    // Try to clean up local file even on failure
+    try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch {}
     await Job.findByIdAndUpdate(jobId, {
       status: 'failed',
       errorMessage: err.message,
@@ -105,6 +143,7 @@ async function processJob(jobId, filePath, language) {
     });
   }
 }
+
 
 // ─── GET JOB (poll status) ───────────────────────────────────────────────────
 // Guest có thể truy cập bằng jobId (không cần đăng nhập)
@@ -165,18 +204,21 @@ exports.deleteJob = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id);
     if (!job) return res.status(404).json({ message: 'Không tìm thấy job' });
-    // Chỉ owner mới được xóa (guest job: userId = null → cần biết jobId)
     if (job.userId && req.userId && job.userId.toString() !== req.userId) {
       return res.status(403).json({ message: 'Không có quyền xóa' });
     }
 
-    // Xóa file khỏi disk
-    if (fs.existsSync(job.filePath)) {
+    // Delete from Cloudinary if exists
+    if (job.cloudPublicId) {
+      await deleteFromCloud(job.cloudPublicId, job.mimeType);
+    }
+
+    // Delete local file if still exists
+    if (job.filePath && fs.existsSync(job.filePath)) {
       fs.unlinkSync(job.filePath);
     }
 
     await job.deleteOne();
-
     res.json({ message: 'Đã xóa thành công' });
   } catch (err) {
     res.status(500).json({ message: err.message });

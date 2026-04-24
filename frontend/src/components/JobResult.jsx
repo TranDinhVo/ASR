@@ -1,42 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle, Loader2, XCircle, Clock, Zap } from 'lucide-react'
+import { CheckCircle, Loader2, XCircle, Clock, FileAudio, FileText, Mic, ChevronDown, ChevronUp } from 'lucide-react'
 import { jobsAPI } from '../services/api'
 import useAppStore from '../store/useAppStore'
-import TranscriptView from './TranscriptView'
-import SummaryCard from './SummaryCard'
-import ChatMessage from './ChatMessage'
 import './JobResult.css'
-
-const STATUS_LABELS = {
-  pending: 'Đang chờ...',
-  processing: 'Đang xử lý...',
-  done: 'Hoàn thành',
-  failed: 'Thất bại',
-}
-
-const STATUS_ICONS = {
-  pending: <Clock size={18} className="animate-pulse" />,
-  processing: <Loader2 size={18} className="animate-spin" />,
-  done: <CheckCircle size={18} />,
-  failed: <XCircle size={18} />,
-}
 
 export default function JobResult({ jobId, onDismiss }) {
   const { updateRecentJob } = useAppStore()
-  const [activeTab, setActiveTab] = useState('transcript')
   const [job, setJob] = useState(null)
+  const [activeTab, setActiveTab] = useState('summary')
+  const [showRaw, setShowRaw] = useState(false)
   const pollRef = useRef(null)
 
   useEffect(() => {
     if (!jobId) return
-
     const poll = async () => {
       try {
         const res = await jobsAPI.getJob(jobId)
         const updatedJob = res.data.job
         setJob(updatedJob)
         updateRecentJob(jobId, updatedJob)
-
         if (updatedJob.status === 'done' || updatedJob.status === 'failed') {
           clearInterval(pollRef.current)
         }
@@ -45,30 +27,17 @@ export default function JobResult({ jobId, onDismiss }) {
         clearInterval(pollRef.current)
       }
     }
-
-    poll() // immediate
-    pollRef.current = setInterval(poll, 3000) // every 3s
-
+    poll()
+    pollRef.current = setInterval(poll, 3000)
     return () => clearInterval(pollRef.current)
   }, [jobId])
 
   if (!jobId) return null
   if (!job) return (
-    <div className="job-result glass-card animate-fade-in">
-      <div className="job-result-loading" style={{ gap: 24 }}>
-        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--accent)' }} />
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ marginBottom: 8, fontWeight: 500 }}>Đang tải...</p>
-          <button 
-            className="btn btn-ghost btn-sm" 
-            onClick={() => onDismiss?.(jobId)}
-            style={{ fontSize: 12, opacity: 0.7 }}
-            id="btn-cancel-loading"
-          >
-            Hủy và quay lại
-          </button>
-        </div>
-      </div>
+    <div className="job-result-loading">
+      <Loader2 size={20} className="animate-spin" style={{ color: '#1a73e8' }} />
+      <span>Đang kết nối...</span>
+      <button onClick={() => onDismiss?.(jobId)} className="cancel-link">Hủy</button>
     </div>
   )
 
@@ -76,86 +45,124 @@ export default function JobResult({ jobId, onDismiss }) {
   const isDone = job.status === 'done'
   const isFailed = job.status === 'failed'
 
+  // Data from pipeline or compatibility fields
+  const stage1 = job.pipeline?.stage1_raw || job.transcript?.content
+  const stage2 = job.pipeline?.stage2_clean || job.transcript?.content
+  const stage3 = job.pipeline?.stage3_summary || job.summary?.content
+  const keyPoints = job.summary?.keyPoints || []
+  const keywords = job.summary?.keywords || []
+
+  const PROGRESS_STAGES = [
+    { max: 33,  label: 'Model 1 (Whisper) — Chuyển giọng nói → văn bản thô...' },
+    { max: 66,  label: 'Model 2 (ViT5-Correct) — Hiệu đính & chuẩn hóa...' },
+    { max: 99,  label: 'Model 3 (ViT5-Summarize) — Đúc kết tri thức...' },
+    { max: 100, label: 'Hoàn tất! Nạp vào Kho tri thức cá nhân...' },
+  ]
+  const progressLabel = PROGRESS_STAGES.find(s => job.progress <= s.max)?.label || PROGRESS_STAGES[3].label
+
   return (
-    <div className="job-thread-segment" style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 8 }}>
-      {/* User Message: The File */}
-      <ChatMessage type="user">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Zap size={18} style={{ opacity: 0.8 }} />
-          <div>
-            <p style={{ fontWeight: 600, margin: 0, fontSize: 15 }}>{job.title}</p>
-            <p style={{ fontSize: 11, opacity: 0.8, margin: 0 }}>{job.originalFilename}</p>
-          </div>
+    <div className="job-result-wrapper">
+      {/* User message: file uploaded */}
+      <div className="user-row">
+        <div className="user-pill file-pill">
+          {job.fileType === 'audio' ? <FileAudio size={14} /> : <FileText size={14} />}
+          <span>{job.title || job.originalFilename}</span>
         </div>
-      </ChatMessage>
+      </div>
 
-      {/* AI Message: The Processing & Result */}
-      <ChatMessage type="ai">
-        <div className={`ai-response-content ${isFailed ? 'has-error' : ''}`} style={{ minWidth: 280 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 12 }}>
-             <div className={`badge badge-${job.status}`}>
-                {STATUS_ICONS[job.status]}
-                <span style={{ marginLeft: 6 }}>{STATUS_LABELS[job.status]}</span>
-             </div>
-             <button className="btn btn-ghost btn-sm dismiss-btn" onClick={() => onDismiss?.(jobId)} style={{ padding: 2, height: 'auto' }}>
-               <XCircle size={14} />
-             </button>
-          </div>
+      {/* AI response: processing result */}
+      <div className="ai-row" style={{ marginTop: 24 }}>
+        <div className="ai-icon-container">
+          {isProcessing
+            ? <Loader2 size={20} className="animate-spin" style={{ color: '#1a73e8' }} />
+            : isDone
+            ? <CheckCircle size={20} style={{ color: '#1e8e3e' }} />
+            : <XCircle size={20} style={{ color: '#d93025' }} />
+          }
+        </div>
 
-          {/* Progress */}
+        <div className="ai-body">
+          {/* Processing state */}
           {isProcessing && (
-            <div className="job-progress animate-fade-in" style={{ padding: 0, border: 'none', background: 'transparent', margin: 0 }}>
-              <div className="job-progress-header" style={{ marginBottom: 8 }}>
-                <span className="job-progress-step" style={{ fontSize: 13 }}>
-                  {job.status === 'pending' ? 'Đang chuẩn bị...' : 'Đang xử lý âm thanh...'}
-                </span>
-                <span style={{ fontSize: 13 }}>{job.progress}%</span>
+            <div className="pipeline-progress">
+              <p className="pipeline-stage-label">{progressLabel}</p>
+              <div className="pipeline-bar-track">
+                <div className="pipeline-bar-fill" style={{ width: `${Math.max(job.progress, 4)}%` }} />
               </div>
-              <div className="progress-bar-track" style={{ height: 6 }}>
-                <div className="progress-bar-fill" style={{ width: `${Math.max(job.progress, 5)}%` }} />
+              <div className="pipeline-steps">
+                <span className={job.progress >= 1  ? 'done' : ''}>① Nhận diện</span>
+                <span className={job.progress >= 34 ? 'done' : ''}>② Hiệu đính</span>
+                <span className={job.progress >= 67 ? 'done' : ''}>③ Tóm tắt</span>
+                <span className={job.progress >= 99 ? 'done' : ''}>④ Nạp RAG</span>
               </div>
             </div>
           )}
 
-          {/* Error */}
+          {/* Failed state */}
           {isFailed && (
-            <div className="job-error-friendly animate-fade-in">
-              <div className="error-title">
-                <XCircle size={16} />
-                <span>Không thể xử lý âm thanh</span>
-              </div>
-              <p className="error-msg">
-                Đã có lỗi xảy ra khi kết nối tới máy chủ AI. Vui lòng kiểm tra lại file hoặc thử lại sau giây lát.
-              </p>
-              {/* Optional: raw error in small text if needed for dev, but hidden for user-friendly feel */}
-              {/* <div style={{ fontSize: 10, opacity: 0.5, marginTop: 4 }}>{job.errorMessage}</div> */}
+            <div className="pipeline-error">
+              <strong>Không thể xử lý bài giảng.</strong>
+              <p>Vui lòng kiểm tra lại định dạng file hoặc thử lại sau.</p>
             </div>
           )}
 
-          {/* Results */}
+          {/* Done state */}
           {isDone && (
-            <div className="job-result-content animate-fade-in chat-result-tabs">
-              <div className="tabs" style={{ marginBottom: 16, gap: 8 }}>
-                <button className={`tab-btn tab-btn-sm ${activeTab === 'transcript' ? 'active' : ''}`} onClick={() => setActiveTab('transcript')} style={{ fontSize: 12, padding: '4px 10px' }}>Nội dung</button>
-                <button className={`tab-btn tab-btn-sm ${activeTab === 'summary' ? 'active' : ''}`} onClick={() => setActiveTab('summary')} style={{ fontSize: 12, padding: '4px 10px' }}>Tóm tắt</button>
-                <button className={`tab-btn tab-btn-sm ${activeTab === 'keywords' ? 'active' : ''}`} onClick={() => setActiveTab('keywords')} style={{ fontSize: 12, padding: '4px 10px' }}>Từ khóa</button>
+            <div className="pipeline-result">
+              {/* Tabs */}
+              <div className="result-tabs">
+                <button className={activeTab === 'summary'    ? 'active' : ''} onClick={() => setActiveTab('summary')}>Tóm tắt bài học</button>
+                <button className={activeTab === 'keypoints'  ? 'active' : ''} onClick={() => setActiveTab('keypoints')}>Ý chính</button>
+                <button className={activeTab === 'keywords'   ? 'active' : ''} onClick={() => setActiveTab('keywords')}>Từ khóa</button>
+                <button className={activeTab === 'transcript' ? 'active' : ''} onClick={() => setActiveTab('transcript')}>Nội dung đã hiệu đính</button>
               </div>
 
-              <div className="compact-result-view" style={{ fontSize: 14 }}>
-                {activeTab === 'transcript' && <TranscriptView transcript={job.transcript} />}
-                {activeTab === 'summary' && <SummaryCard summary={job.summary} />}
+              <div className="result-body">
+                {/* Summary */}
+                {activeTab === 'summary' && (
+                  <div className="result-text">{stage3 || 'Chưa có bản tóm tắt.'}</div>
+                )}
+
+                {/* Key points */}
+                {activeTab === 'keypoints' && (
+                  <ul className="key-points-list">
+                    {keyPoints.length > 0
+                      ? keyPoints.map((kp, i) => <li key={i}>{kp}</li>)
+                      : <li style={{ opacity: 0.6 }}>Chưa có ý chính nào.</li>
+                    }
+                  </ul>
+                )}
+
+                {/* Keywords */}
                 {activeTab === 'keywords' && (
-                  <div className="keywords-grid">
-                    {job.summary?.keywords?.map((kw, i) => (
-                      <span key={i} className="keyword-chip" style={{ fontSize: 11 }}>{kw}</span>
-                    ))}
+                  <div className="keywords-wrap">
+                    {keywords.length > 0
+                      ? keywords.map((kw, i) => <span key={i} className="kw-chip">#{kw}</span>)
+                      : <span style={{ opacity: 0.6 }}>Chưa có từ khóa.</span>
+                    }
+                  </div>
+                )}
+
+                {/* Clean transcript */}
+                {activeTab === 'transcript' && (
+                  <div>
+                    <div className="result-text">{stage2 || 'Chưa có nội dung.'}</div>
+                    {stage1 && (
+                      <div style={{ marginTop: 16 }}>
+                        <button className="toggle-raw-btn" onClick={() => setShowRaw(!showRaw)}>
+                          {showRaw ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          {showRaw ? 'Ẩn văn bản thô (Whisper)' : 'Xem văn bản thô (Whisper)'}
+                        </button>
+                        {showRaw && <div className="raw-text">{stage1}</div>}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
-      </ChatMessage>
+      </div>
     </div>
   )
 }

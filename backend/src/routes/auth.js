@@ -4,6 +4,7 @@ const {
   register,
   login,
   getMe,
+  updateMe,
   verifyEmail,
   resendVerification,
 } = require('../controllers/authController');
@@ -23,5 +24,8 @@ router.post('/resend-verification', resendVerification);
 
 // GET /api/auth/me (cần token)
 router.get('/me', auth, getMe);
+
+// PATCH /api/auth/me — cập nhật profile
+router.patch('/me', auth, updateMe);
 
 module.exports = router;

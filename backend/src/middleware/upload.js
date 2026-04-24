@@ -2,7 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Các định dạng audio được phép
+// Các định dạng được phép
 const ALLOWED_TYPES = [
   'audio/mpeg',       // .mp3
   'audio/mp4',        // .m4a
@@ -11,8 +11,12 @@ const ALLOWED_TYPES = [
   'audio/ogg',        // .ogg
   'audio/webm',       // .webm
   'audio/flac',       // .flac
-  'video/mp4',        // .mp4 (có audio)
+  'video/mp4',        // .mp4
   'video/webm',
+  'video/quicktime',  // .mov
+  'application/pdf',  // .pdf
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/msword', // .doc
 ];
 
 const uploadDir = path.join(__dirname, '../../uploads');

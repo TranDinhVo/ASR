@@ -1,156 +1,188 @@
-.chat-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ─── Gemini-style Input Box ─────────────────────────────────────────────────── */
+.gemini-input-box {
+  background: #f0f4f9;
+  border-radius: 24px;
+  padding: 12px 16px 8px 16px;
   width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+  cursor: text;
 }
 
-.chat-input-bar {
+.gemini-input-box:focus-within {
+  background: white;
+  border-color: #dadce0;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+
+.gemini-input-box[data-drag="true"] {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+/* ─── Top Row: Text Input ────────────────────────────────────────────────────── */
+.gemini-input-top {
+  margin-bottom: 8px;
+}
+
+.gemini-text-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: #1f1f1f;
+  line-height: 1.5;
+  padding: 4px 0;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+  resize: none;
+}
+
+.gemini-text-input::placeholder {
+  color: #9aa0a6;
+}
+
+/* ─── Bottom Row: Actions ────────────────────────────────────────────────────── */
+.gemini-input-bottom {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 26px;
-  padding: 8px;
-  gap: 10px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 56px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  justify-content: space-between;
 }
 
-.chat-input-bar:focus-within, .chat-input-bar.drag-active {
-  border-color: var(--accent);
-  background: white;
-  box-shadow: 0 0 0 4px var(--accent-light), 0 10px 30px -10px rgba(37, 99, 235, 0.2);
-  transform: translateY(-1px);
+.gemini-input-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.chat-input-bar.uploading {
-  opacity: 0.8;
-  pointer-events: none;
+.gemini-input-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* ─── Buttons ────────────────────────────────────────────────────────────────── */
-.attach-btn, .send-btn {
-  width: 40px;
-  height: 40px;
+.gemini-icon-btn {
+  background: none;
+  border: none;
+  color: #444746;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.attach-btn {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid transparent;
-}
-
-.attach-btn:hover {
-  background: var(--bg-secondary);
-  color: var(--accent);
-  border-color: var(--border);
-}
-
-.send-btn {
-  background: var(--bg-tertiary);
-  color: var(--text-muted);
-  border: none;
-}
-
-.send-btn.active {
-  background: var(--accent);
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
-
-.send-btn.active:hover {
-  transform: scale(1.08) rotate(-10deg);
-  background: var(--accent-hover);
-}
-
-/* ─── Content Area ───────────────────────────────────────────────────────────── */
-.input-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
-  overflow: hidden;
-}
-
-.placeholder-text {
-  color: var(--text-muted);
-  font-size: 15px;
-  margin: 0;
   cursor: pointer;
-  white-space: nowrap;
-  letter-spacing: -0.01em;
+  transition: background 0.2s;
 }
 
-.file-chip {
+.gemini-icon-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.gemini-tool-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: #f1f5f9;
-  border: 1px solid var(--border);
-  padding: 6px 14px;
-  border-radius: 14px;
-  max-width: 100%;
-}
-
-.file-chip-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 250px;
-}
-
-.file-chip-remove {
-  color: var(--text-muted);
+  gap: 6px;
   background: none;
   border: none;
+  color: #444746;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 18px;
   cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+}
+
+.gemini-tool-btn:hover {
+  background: rgba(0,0,0,0.06);
+}
+
+.gemini-model-selector {
   display: flex;
   align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444746;
+  padding: 6px 12px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: 'Google Sans', 'Inter', sans-serif;
 }
 
-.file-chip-remove:hover {
-  color: var(--danger);
+.gemini-model-selector:hover {
+  background: rgba(0,0,0,0.06);
 }
 
-/* ─── Circular Progress ──────────────────────────────────────────────────────── */
-.circular-progress {
-  position: relative;
+.gemini-mic-btn {
+  background: none;
+  border: none;
+  color: #444746;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.progress-value {
-  position: absolute;
-  font-size: 9px;
-  font-weight: 800;
-  color: var(--accent);
+.gemini-mic-btn:hover {
+  background: rgba(0,0,0,0.06);
 }
 
-.mini-upload-track {
-  height: 4px;
-  background: var(--bg-tertiary);
-  width: calc(100% - 40px);
-  margin: 0 auto;
-  border-radius: 2px;
+.gemini-mic-btn.active {
+  color: #d93025;
+  background: #fce8e6;
+  animation: pulse 1.5s infinite;
+}
+
+/* ─── File Chip ──────────────────────────────────────────────────────────────── */
+.gemini-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.gemini-file-chip button {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Progress ───────────────────────────────────────────────────────────────── */
+.gemini-progress {
+  height: 2px;
+  background: #e8eaed;
+  border-radius: 1px;
+  margin-bottom: 8px;
   overflow: hidden;
 }
 
-.mini-upload-fill {
+.gemini-progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: #1a73e8;
   transition: width 0.3s ease;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
